@@ -1,0 +1,32 @@
+[
+
+{
+    "iso":"AZE",
+    "country":"Azerbaijan",
+    "basic": 86235, 
+    "2000-2005_cover_loss":27725,
+    "2005-2010_cover_loss":20797,
+    "2010-2015_cover_loss":14200,
+    "2015-2020_cover_loss":1927,
+    "Unnamed: 6":null,
+    "2000-2005 umd_tree_cover_gain__ha":3542.3069414452,
+    "2005-2010 umd_tree_cover_gain__ha":2965.5919013724,
+    "2010-2015 umd_tree_cover_gain__ha":5408.9885376407,
+    "2015-2020 umd_tree_cover_gain__ha":18352.9949374749
+},
+{
+    "iso":"FAK",
+    "country":"fake",
+    "basic": 10000, 
+    "2000-2005_cover_loss":2000,
+    "2005-2010_cover_loss":2000,
+    "2010-2015_cover_loss":1000,
+    "2015-2020_cover_loss":1000,
+    "Unnamed: 6":null,
+    "2000-2005 umd_tree_cover_gain__ha":3000,
+    "2005-2010 umd_tree_cover_gain__ha":4000,
+    "2010-2015 umd_tree_cover_gain__ha":5000,
+    "2015-2020 umd_tree_cover_gain__ha":1000
+}
+
+]
