@@ -4,6 +4,7 @@ import gsap from 'gsap';
 
 let scene, camera, renderer, controls;
 let trees = [];
+let data;
 let currentData;
 // let currentCountry;
 
@@ -13,6 +14,63 @@ let prevButtonAState = false;
 let prevButtonBState = false;
 
 let sceneContainer;
+
+function setupControllers() {
+    controller1 = renderer.xr.getController(0);
+    controller2 = renderer.xr.getController(1);
+
+    // controller1.addEventListener('selectstart', onSelectStart);
+    // controller1.addEventListener('selectend', onSelectEnd);
+    // controller2.addEventListener('selectstart', onSelectStart);
+    // controller2.addEventListener('selectend', onSelectEnd);
+
+    scene.add(controller1);
+    scene.add(controller2);
+
+    controller1.addEventListener('selectstart', () => {
+        console.log("Controller 1 selectstart");
+        changeCountry();
+    });
+
+    // Listen for button events on Controller 2 (e.g., trigger for changing year)
+    controller2.addEventListener('selectstart', () => {
+        console.log("Controller 2 selectstart");
+        changeYear();
+    });
+}
+
+function changeCountry() {
+    const select = document.getElementById('countrySelect');
+    const options = select.options;
+    const currentIndex = select.selectedIndex;
+
+    // Move to the next country, or loop back to the first
+    const nextIndex = (currentIndex + 1) % options.length;
+    select.selectedIndex = nextIndex;
+
+    // Update currentData with the new country's data
+    currentData = data.find(d => d.iso === select.value);
+
+    // Reinitialize trees based on the new country's `basic` value
+    initializeTrees(currentData.basic);
+
+    // Update visualization for the current period
+    updateVisualization(getCurrentPeriod());
+}
+
+
+function changeYear() {
+    const slider = document.getElementById('yearSlider');
+    const currentValue = parseInt(slider.value);
+    const maxValue = parseInt(slider.max);
+
+    // Increment the year, or loop back to the minimum
+    const nextValue = (currentValue + 5) > maxValue ? parseInt(slider.min) : currentValue + 5;
+    slider.value = nextValue;
+
+    // Update visualization for the new period
+    updateVisualization(getCurrentPeriod());
+}
 
 // 1. Initialize Scene here
 function init() {
@@ -43,6 +101,7 @@ function init() {
 
     // Load data
     loadData();
+    setupControllers();
 }
 
 // 2. Load Data
@@ -168,6 +227,7 @@ function enableXR() {
     renderer.setAnimationLoop(() => {
         renderer.render(scene, camera);
     });
+    // console.log("WebXR session started");
 }
 
 
