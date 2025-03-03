@@ -25,15 +25,13 @@ function setupControllers() {
   scene.add(controller1);
   scene.add(controller2);
 
-  // Add button press event listeners for both controllers to change country
+  // Remove the selectstart event listeners as we'll check for specific buttons in the animation loop
   controller1.addEventListener("selectstart", () => {
     console.log("Controller 1 button pressed");
-    changeCountry();
   });
 
   controller2.addEventListener("selectstart", () => {
     console.log("Controller 2 button pressed");
-    changeCountry();
   });
 }
 
@@ -46,8 +44,17 @@ function changeCountry() {
   const nextIndex = (currentIndex + 1) % options.length;
   select.selectedIndex = nextIndex;
 
+  // Clear existing trees
+  while (trees.length > 0) {
+    const tree = trees.pop();
+    sceneContainer.remove(tree);
+  }
+
   // Update currentData with the new country's data
   currentData = data.find((d) => d.iso === select.value);
+
+  console.log("Changing to country:", select.options[nextIndex].textContent);
+  console.log("Current data:", currentData);
 
   // Reinitialize trees based on the new country's `basic` value
   initializeTrees(currentData.basic);
@@ -124,9 +131,27 @@ function init() {
 
 // 2. Load Data
 async function loadData() {
-  const response = await fetch("test_data.json");
-  const data = await response.json();
-  setupUI(data);
+  try {
+    const response = await fetch("test_data.json");
+    data = await response.json(); // Assign to the global data variable
+
+    // Set currentData to the first country's data
+    if (data && data.length > 0) {
+      currentData = data[0];
+      console.log("Data loaded successfully:", data);
+      console.log("Initial country data:", currentData);
+    }
+
+    setupUI(data);
+
+    // Initialize trees for the first country
+    if (currentData) {
+      initializeTrees(currentData.basic);
+      updateVisualization(getCurrentPeriod());
+    }
+  } catch (error) {
+    console.error("Error loading data:", error);
+  }
 }
 
 // 3. Create Tree Model
@@ -237,35 +262,58 @@ function enableXR() {
 
   // Set up the animation loop to handle rendering and joystick input
   renderer.setAnimationLoop(function () {
-    // Check for joystick movement on right controller (controller2)
+    // Check for joystick movement and button presses on controllers
     if (renderer.xr.isPresenting) {
       const session = renderer.xr.getSession();
 
       if (session) {
         for (const source of session.inputSources) {
-          if (source && source.gamepad && source.handedness === "right") {
+          if (source && source.gamepad) {
             const gamepad = source.gamepad;
+            const handedness = source.handedness; // 'left' or 'right'
 
-            // Check joystick/thumbstick movement (axes[2] is typically horizontal movement)
-            if (gamepad.axes && gamepad.axes.length >= 3) {
-              const horizontalAxis = gamepad.axes[2];
+            // Check for button B press on Meta Quest controllers
+            // Button 1 is typically button B on Meta Quest controllers
+            if (gamepad.buttons && gamepad.buttons.length > 1) {
+              const buttonB = gamepad.buttons[1];
 
-              // Only process joystick movement if it exceeds threshold and cooldown has passed
-              const currentTime = Date.now();
-              if (
-                Math.abs(horizontalAxis) > joystickThreshold &&
-                currentTime - lastJoystickTime > joystickCooldown
-              ) {
-                lastJoystickTime = currentTime;
+              // Check if button B is pressed (and wasn't pressed in the previous frame)
+              if (buttonB.pressed) {
+                if (handedness === "right" && !prevButtonBState) {
+                  console.log("Button B pressed on right controller");
+                  changeCountry();
+                  prevButtonBState = true;
+                }
+              } else {
+                if (handedness === "right") {
+                  prevButtonBState = false;
+                }
+              }
+            }
 
-                if (horizontalAxis > joystickThreshold) {
-                  // Move forward in time (right)
-                  console.log("Joystick moved right");
-                  changeYearBy(5);
-                } else if (horizontalAxis < -joystickThreshold) {
-                  // Move backward in time (left)
-                  console.log("Joystick moved left");
-                  changeYearBy(-5);
+            // Check joystick movement on right controller
+            if (handedness === "right") {
+              // Check joystick/thumbstick movement (axes[2] is typically horizontal movement)
+              if (gamepad.axes && gamepad.axes.length >= 3) {
+                const horizontalAxis = gamepad.axes[2];
+
+                // Only process joystick movement if it exceeds threshold and cooldown has passed
+                const currentTime = Date.now();
+                if (
+                  Math.abs(horizontalAxis) > joystickThreshold &&
+                  currentTime - lastJoystickTime > joystickCooldown
+                ) {
+                  lastJoystickTime = currentTime;
+
+                  if (horizontalAxis > joystickThreshold) {
+                    // Move forward in time (right)
+                    console.log("Joystick moved right");
+                    changeYearBy(5);
+                  } else if (horizontalAxis < -joystickThreshold) {
+                    // Move backward in time (left)
+                    console.log("Joystick moved left");
+                    changeYearBy(-5);
+                  }
                 }
               }
             }
