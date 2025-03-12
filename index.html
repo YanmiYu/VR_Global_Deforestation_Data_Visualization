@@ -10,8 +10,17 @@
 	<body>
 		<script type="module" src="/main.js"></script>
 		<div id="ui">
+			<span id="CountryLabel">Select Country</span>
 			<select id="countrySelect"></select>
-			<input type="range" id="yearSlider" min="2000" max="2015" step="5" value="2000">
+			<br><br>
+			
+			<span id="yearLabel">Select Time 2000</span>
+			<input type="range" id="yearSlider" min="2000" max="2020" step="5" value="2000">
+			<span id="yearLabel">2020</span>
+		
+			<span id="timeStepText" style="margin-left: 20px;">Time step: Every 5 years</span> <!-- Added spacing -->
 		</div>
+		
 	</body>
+	
 </html>
