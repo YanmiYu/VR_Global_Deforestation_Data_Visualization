@@ -129,6 +129,7 @@ function changeYearBy(amount) {
   updateVisualization(period);
 
   console.log("=== YEAR CHANGE COMPLETED ===");
+  updateYearText(currentYear, currentData.country);
 }
 
 function changeYear() {
@@ -171,6 +172,7 @@ function init() {
   // Load data
   loadData();
   setupControllers();
+  createYearPlane();
 }
 
 // 2. Load Data
@@ -241,7 +243,7 @@ function initializeTrees(basic) {
 // 5. Update Visualization
 function updateVisualization(period) {
   // Calculate tree counts (example: 1 tree = 1000 ha)
-  const gain = currentData[`${period} umd_tree_cover_gain__ha`] / 1000;
+  const gain = currentData[`${period}_umd_tree_cover_gain__ha`] / 1000;
   const loss = currentData[`${period}_cover_loss`] / 1000;
 
   // Check if in immersive XR mode
@@ -320,7 +322,7 @@ function setupUI(data) {
     select.appendChild(option);
   });
 
-  // Event listeners
+  // Event listener for changing country
   select.addEventListener("change", () => {
     currentCountryIndex = select.selectedIndex;
     currentData = data[currentCountryIndex];
@@ -331,20 +333,94 @@ function setupUI(data) {
       sceneContainer.remove(tree);
     }
 
-    initializeTrees(currentData.basic); // Initialize trees using `basic`
+    // Re-initialize trees and update the scene
+    initializeTrees(currentData.basic); 
     updateVisualization(getCurrentPeriod());
+
+    // Update the text on the canvas (year + country)
+    updateYearText(currentYear, currentData.country);
   });
 
+  // Event listener for changing the year via slider
   slider.addEventListener("input", () => {
     currentYear = parseInt(slider.value);
     updateVisualization(getCurrentPeriod());
+
+    // Update the text on the canvas (year + current country)
+    updateYearText(currentYear, currentData.country);
   });
 }
+
 
 function getCurrentPeriod() {
   // Use our internal year state instead of reading from DOM
   return `${currentYear}-${currentYear + yearStep}`;
 }
+
+let yearPlane;      // The Mesh that holds our plane
+let yearTexture;    // Dynamic CanvasTexture used for text
+let yearMaterial;   // Material for the plane
+
+function createYearPlane() {
+  // Create a <canvas> for drawing text
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 150;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#FFFFFF"; 
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Default text (before the slider changes)
+  ctx.fillStyle = "#000000"; 
+  ctx.font = "60px sans-serif"; // Adjust font size as needed
+  if (currentData && currentData.country) {
+    ctx.fillText(`Country: ${currentData.country}`, 50, 60);
+  }
+  ctx.fillText(`Year: ${currentYear}`, 50, 120);
+
+
+  // Create a texture from the canvas
+  yearTexture = new THREE.CanvasTexture(canvas);
+  yearMaterial = new THREE.MeshBasicMaterial({ map: yearTexture, side: THREE.DoubleSide });
+
+  // Create a plane geometry and mesh
+  const planeGeometry = new THREE.PlaneGeometry(2, 1); // (width, height) – adjust as needed
+  yearPlane = new THREE.Mesh(planeGeometry, yearMaterial);
+
+  // Position the plane in front of the camera
+  // Adjust position so it’s clearly visible in VR
+  yearPlane.position.set(0, 2, -3);
+
+  // Add to the main scene (or sceneContainer)
+  scene.add(yearPlane);
+}
+
+function updateYearText(newYear, countryName) {
+  if (!yearTexture) return; // If plane not created yet, do nothing
+
+  // Get the same <canvas> we used before
+  const canvas = yearTexture.image;
+  const ctx = canvas.getContext("2d");
+
+  // Clear previous text
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Redraw with updated year
+  ctx.fillStyle = "#FFFFFF"; 
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#000000"; 
+  ctx.font = "60px sans-serif";
+
+  ctx.fillText(`Country: ${countryName}`, 50, 70);
+  ctx.fillText(`Year: ${newYear}`, 50, 130);
+
+  // Mark texture for update
+  yearTexture.needsUpdate = true;
+}
+
+
 
 // 7. WebXR Setup
 function enableXR() {
